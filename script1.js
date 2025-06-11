@@ -11,6 +11,9 @@ const products = [
 function renderProducts(filter = "") {
   const container = document.getElementById("productContainer");
   const noResult = document.getElementById("noResult");
+  const searchTip = document.getElementById("searchTip");
+  const keywordDisplay = document.getElementById("keywordDisplay");
+
   container.innerHTML = "";
 
   const filtered = filter
@@ -18,41 +21,57 @@ function renderProducts(filter = "") {
     : products;
 
   if (filtered.length === 0) {
-    noResult.style.display = "block";
-    return;
+    noResult.classList.remove("d-none"); // 顯示查無結果
+    searchTip.classList.add("d-none");   // 隱藏搜尋提示
   } else {
-    noResult.style.display = "none";
+    noResult.classList.add("d-none");    // 隱藏查無結果
+    if (filter) { // 如果有篩選條件，顯示搜尋提示和關鍵字
+      searchTip.classList.remove("d-none");
+      keywordDisplay.textContent = filter;
+    } else { // 如果沒有篩選條件 (顯示所有商品)，隱藏搜尋提示
+      searchTip.classList.add("d-none");
+      keywordDisplay.textContent = "";
+    }
   }
 
   filtered.forEach(p => {
     const card = document.createElement("div");
-    card.className = "product-card";
+    card.className = "col mb-4"; // 應用 Bootstrap 的 col 和 mb-4 (margin-bottom)
 
     card.innerHTML = `
-      <div class="product-id">#${p.id}</div>
-      <img src="${p.image}" class="product-image" alt="${p.name}">
-      <div class="product-info">
-        <h3>${p.name}</h3>
-        <p>分類：${p.category}</p>
-        <p>價格：${p.price} 元</p>
-        <p class="more-text d-none">${p.text}</p>
-
-        <button class="btn-detail" onclick="toggleText(this)">查看詳情</button>
-        <button class="btn-cart" onclick="addToCart(${p.id}, '${p.name}', ${p.price})">加入購物車</button>
+      <div class="product-card">
+        <div class="product-id">#${p.id}</div>
+        <img src="${p.image}" class="product-image" alt="${p.name}">
+        <div class="product-info">
+          <h3>${p.name}</h3>
+          <p>分類：${p.category}</p>
+          <p>價格：${p.price} 元</p>
+          <p class="more-text d-none">${p.text}</p>
+          <div>
+            <button class="btn-detail" onclick="toggleText(this)">查看詳情</button>
+            <button class="btn-cart" onclick="addToCart(${p.id}, '${p.name}', ${p.price})">加入購物車</button>
+          </div>
+        </div>
       </div>
     `;
-
     container.appendChild(card);
   });
 }
 
 function toggleText(button) {
-  const textElement = button.previousElementSibling;
-  textElement.classList.toggle("d-none");
+  // 現在 button.previousElementSibling 會正確地選到包含按鈕的 div 容器
+  // 我們需要從那個 div 容器的「前一個兄弟元素」來找到 more-text
+  // 或者更穩妥的方式是透過父元素 product-info 來尋找
+  const productInfo = button.closest('.product-info'); // 找到最近的 .product-info 父元素
+  const textElement = productInfo.querySelector('.more-text'); // 從 .product-info 裡面尋找 .more-text
 
-  button.textContent = textElement.classList.contains("d-none")
-    ? "查看詳情"
-    : "隱藏內容";
+  if (textElement) { // 確保元素存在
+    textElement.classList.toggle("d-none");
+
+    button.textContent = textElement.classList.contains("d-none")
+      ? "查看詳情"
+      : "隱藏內容";
+  }
 }
 
 function addToCart(id, name, price) {
@@ -69,9 +88,15 @@ function addToCart(id, name, price) {
   alert(`${name} 已加入購物車！`);
 }
 
+// 清除搜尋函式
+function resetSearch() {
+  document.getElementById("searchInput").value = ""; // 清空搜尋欄
+  renderProducts(); // 重新渲染所有商品 (不帶篩選條件)
+}
+
 // 綁定搜尋事件
 document.getElementById("searchForm").addEventListener("submit", e => {
-  e.preventDefault();
+  e.preventDefault(); // 阻止表單的預設提交行為
   const keyword = document.getElementById("searchInput").value.trim();
   renderProducts(keyword);
 });
