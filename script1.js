@@ -8,36 +8,57 @@ const products = [
 { id: 7, name: "到底在炒什麼", category: "動作", price: 85, image: "https://raw.githubusercontent.com/Jin10247/image/7b6080225fe65657cffe07f32dbbbdfa8b75903d/7.jpg", text: "加點醬油、生抽、老抽，大火快炒，出鍋!" },
 ];
 
+const allCategories = ["食物", "生活", "動作"];
 
 function renderProducts(filter = "") {
   const container = document.getElementById("productContainer");
   const noResult = document.getElementById("noResult");
   const searchTip = document.getElementById("searchTip");
   const keywordDisplay = document.getElementById("keywordDisplay");
+  const searchInput = document.getElementById("searchInput"); // 取得搜尋輸入框元素
 
-  container.innerHTML = "";
+  container.innerHTML = ""; // 清空現有商品
 
-  const filtered = filter
-    ? products.filter(p => p.name.includes(filter) || p.category.includes(filter))
-    : products;
+  let filteredProducts;
+  let currentFilter = filter.trim(); // 清除首尾空白
 
-  if (filtered.length === 0) {
+  // 判斷是分類篩選還是關鍵字搜尋
+  if (allCategories.includes(currentFilter)) {
+    // 這是來自首頁的分類連結或精確的分類搜尋
+    filteredProducts = products.filter(p => p.category === currentFilter);
+    // 更新搜尋輸入框為該分類名稱
+    searchInput.value = currentFilter;
+  } else if (currentFilter) {
+    // 這是來自搜尋框的關鍵字搜尋 (名稱或分類)
+    filteredProducts = products.filter(p =>
+      p.name.includes(currentFilter) || p.category.includes(currentFilter)
+    );
+  } else {
+    // 沒有篩選條件，顯示所有商品
+    filteredProducts = products;
+  }
+
+  // 顯示或隱藏提示訊息
+  if (filteredProducts.length === 0) {
     noResult.classList.remove("d-none"); // 顯示查無結果
     searchTip.classList.add("d-none");   // 隱藏搜尋提示
   } else {
     noResult.classList.add("d-none");    // 隱藏查無結果
-    if (filter) { // 如果有篩選條件，顯示搜尋提示和關鍵字
+    if (currentFilter) { // 如果有篩選條件 (無論是分類還是關鍵字)
       searchTip.classList.remove("d-none");
-      keywordDisplay.textContent = filter;
-    } else { // 如果沒有篩選條件 (顯示所有商品)，隱藏搜尋提示
+      keywordDisplay.textContent = currentFilter;
+    } else { // 如果沒有篩選條件 (顯示所有商品)
       searchTip.classList.add("d-none");
       keywordDisplay.textContent = "";
     }
   }
 
-  filtered.forEach(p => {
+  // 渲染商品卡片
+  filteredProducts.forEach(p => {
     const card = document.createElement("div");
-    card.className = "col mb-4"; // 應用 Bootstrap 的 col 和 mb-4 (margin-bottom)
+    // 使用 col-md-4 確保在桌面版每行三個，同時 mb-4 提供垂直間距
+    // row-cols-1 和 row-cols-md-3 已經在父容器 .row 上定義了響應式行為
+    card.className = "col-md-4 mb-4";
 
     card.innerHTML = `
       <div class="product-card">
@@ -60,15 +81,11 @@ function renderProducts(filter = "") {
 }
 
 function toggleText(button) {
-  // 現在 button.previousElementSibling 會正確地選到包含按鈕的 div 容器
-  // 我們需要從那個 div 容器的「前一個兄弟元素」來找到 more-text
-  // 或者更穩妥的方式是透過父元素 product-info 來尋找
-  const productInfo = button.closest('.product-info'); // 找到最近的 .product-info 父元素
-  const textElement = productInfo.querySelector('.more-text'); // 從 .product-info 裡面尋找 .more-text
+  const productInfo = button.closest('.product-info');
+  const textElement = productInfo.querySelector('.more-text');
 
-  if (textElement) { // 確保元素存在
+  if (textElement) {
     textElement.classList.toggle("d-none");
-
     button.textContent = textElement.classList.contains("d-none")
       ? "查看詳情"
       : "隱藏內容";
@@ -102,5 +119,16 @@ document.getElementById("searchForm").addEventListener("submit", e => {
   renderProducts(keyword);
 });
 
-// 初始載入全部商品
-renderProducts();
+// 在頁面載入時檢查 URL 中的查詢參數，並進行初始渲染
+window.addEventListener('DOMContentLoaded', () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const categoryFilter = urlParams.get('category'); // 獲取 category 參數的值
+
+  if (categoryFilter) {
+    // 如果有 category 參數，就根據該分類渲染商品
+    renderProducts(categoryFilter);
+  } else {
+    // 如果沒有 category 參數，就渲染所有商品
+    renderProducts();
+  }
+});
